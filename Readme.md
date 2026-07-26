@@ -42,16 +42,21 @@ whole chromosome at high sensitivity (`-f 0`) can climb into tens to hundreds of
 (`VariationMap` 16 → 4), `-XX:+UseG1GC -XX:+UseStringDeduplication` JVM defaults, and an opt-in
 `--chunk INT` that splits long regions to bound the per-region live set.
 
-**A little statistics** — 1 Mb region, `-f 0`, single thread (same jar, footprint only, output byte-identical):
+**A little statistics — the VAF=0 (`-f 0`) case.** At the default `-f 0.01`, VarDict only keeps positions
+with an allele fraction ≥ 1%. At `-f 0` it keeps **every covered base × allele**, so the retained variant
+rows — and the per-position maps behind them — explode. This is the memory-heavy case. On a 1 Mb region,
+single thread:
 
-| configuration | peak RSS |
-|---|---|
-| stock VarDictJava 1.8.3 defaults | 5.5 GB |
-| this fork's JVM defaults (`-Xmx8g`, G1GC, string dedup) | **3.5 GB** (~1.6× lower) |
+| run | variant rows | peak RSS |
+|---|---|---|
+| `-f 0.01` (default) | 1,904 | 4.95 GB |
+| `-f 0` — stock 1.8.3 | **23,283** (~12× more) | 6.47 GB |
+| `-f 0` — this fork (G1 + string-dedup defaults) | 23,283 (identical output) | **3.55 GB** (~1.8× less) |
 
-The gap widens with region size. For very large single regions, add `--chunk` (e.g. `--chunk 50000`) to keep
-peak memory bounded regardless of region length; chunking splits the region, so only the `Seg` column
-reflects the sub-regions — the variant calls themselves are unchanged.
+Output is byte-identical; only peak memory changes. The gap grows with region size — for very large single
+regions add `--chunk` (e.g. `--chunk 50000`) to bound the per-region live set regardless of length (this
+splits the region, so only the `Seg` column reflects the sub-regions; the variant calls are unchanged).
+Reproduce with [`tests/memory_vaf0.sh`](tests/memory_vaf0.sh).
 
 ## Requirements
 

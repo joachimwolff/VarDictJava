@@ -74,6 +74,25 @@ public class SomaticPostProcessModuleTest {
         highQualityToLowQualityRatio = 2.5;
     }};
 
+    Variant lowQualityVariant = new Variant() {{
+        refallele = "T";
+        varallele = "C";
+        descriptionString = "C";
+        genotype = "T/C";
+        totalPosCoverage = 0;
+        positionCoverage = 8;
+        varsCountOnReverse = 4;
+        varsCountOnForward = 4;
+        strandBiasFlag = "2";
+        frequency = 0.5;
+        meanPosition = 9;
+        meanQuality = 2.6;
+        meanMappingQuality = 7.8;
+        numberOfMismatches = 2.0;
+        hicnt = 44;
+        highQualityToLowQualityRatio = 2.5;
+    }};
+
     Variant refVariant = new Variant() {{
         refallele = "T";
         varallele = "T";
@@ -228,6 +247,19 @@ public class SomaticPostProcessModuleTest {
         String expectedOutput = "test_bam\tgene_name\t1\t0\t0\tT\tA\t0\t0\t3\t5\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t" +
                 "0\t0\t4\t0\t0\t3\t5\tT/A\t0.4000\t2\t9.0\t0\t26.0\t0\t7.8\t2.500\t0\t0\t2.0\t0\t0\t0\t0\t0\t1:1-10\t" +
                 "StrongLOH\tSNV\t0\t0\t0\t0\n";
+        assertEquals(outContent.toString(), expectedOutput);
+    }
+
+    @Test
+    public void testGoodVariantRankedBelowABadOneInFirstSample() {
+        SomaticPostProcessModule module = runMethod();
+        module.callingForBothSamples(1,
+                new Vars(){{variants.add(lowQualityVariant); variants.add(goodVariant); referenceVariant = refVariant; }},
+                new Vars(){{variants.add(badVariant); referenceVariant = refVariant; }},
+                region, new HashSet<>());
+        String expectedOutput = "test_bam\tgene_name\t1\t0\t0\tT\tA\t0\t4\t0\t0\t3\t5\tT/A\t0.4000\t2\t9.0\t0\t26.0\t0\t7.8\t" +
+                "2.500\t0\t0\t2.0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1:1-10\t" +
+                "StrongSomatic\tSNV\t0\t0\t0\t0\n";
         assertEquals(outContent.toString(), expectedOutput);
     }
 

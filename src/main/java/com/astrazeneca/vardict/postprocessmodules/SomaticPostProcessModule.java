@@ -154,16 +154,17 @@ public class SomaticPostProcessModule implements BiConsumer<Scope<AlignedVarsDat
      * @param splice set of strings representing introns in splice
      */
     private void printVariationsFromFirstSample(Integer position, Vars v1, Vars v2, Region region, Set<String> splice){
+        Set<String> calledFromFirstSample = new HashSet<>();
         int numberOfProcessedVariation = 0;
-        while (numberOfProcessedVariation < v1.variants.size()
-                && v1.variants.get(numberOfProcessedVariation).isGoodVar(v1.referenceVariant,
-                v1.variants.get(numberOfProcessedVariation).varType(), splice)) {
+        while (numberOfProcessedVariation < v1.variants.size()) {
             final Variant vref = v1.variants.get(numberOfProcessedVariation);
-            if (vref.refallele.equals(vref.varallele)) {
+            if (!vref.isGoodVar(v1.referenceVariant, vref.varType(), splice)
+                    || vref.refallele.equals(vref.varallele)) {
                 numberOfProcessedVariation++;
                 continue;
             }
             final String nt = vref.descriptionString;
+            calledFromFirstSample.add(nt);
             vref.vartype = vref.varType();
             SomaticOutputVariant outputVariant;
             if (vref.vartype.equals(COMPLEX)) {
@@ -218,11 +219,11 @@ public class SomaticPostProcessModule implements BiConsumer<Scope<AlignedVarsDat
             }
             numberOfProcessedVariation++;
         }
-        if (numberOfProcessedVariation == 0) {
-            if (v2.variants.isEmpty()) {
-                return;
-            }
+        if (!v2.variants.isEmpty()) {
             for (Variant v2var : v2.variants) {
+                if (calledFromFirstSample.contains(v2var.descriptionString)) {
+                    continue;
+                }
                 SomaticOutputVariant outputVariant;
                 v2var.vartype = v2var.varType();
                 if (!v2var.isGoodVar(v2.referenceVariant, v2var.vartype, splice)) {
